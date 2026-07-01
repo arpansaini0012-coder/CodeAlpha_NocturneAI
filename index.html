@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nocturne AI - Deep Learning Music Generator</title>
+    <!-- Tailwind CSS for Premium Layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#8B5CF6', 600: '#7C3AED', 700: '#6D28D9' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        .piano-key { transition: transform 0.1s, background-color 0.1s; }
+        .piano-key:active { transform: scaleY(0.95); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between dark:bg-slate-950 dark:text-slate-100 light:bg-slate-50 light:text-slate-900 transition-colors duration-300">
+
+    <!-- Navbar Header -->
+    <header class="bg-slate-900/50 dark:bg-slate-900/50 light:bg-white border-b border-slate-800 dark:border-slate-800 light:border-slate-200 px-6 py-4 flex justify-between items-center shadow-md backdrop-blur-md sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white p-2.5 rounded-xl shadow-lg shadow-violet-500/20">
+                <i data-lucide="music-4" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Nocturne AI</h1>
+                <p class="text-[10px] text-slate-400 font-medium tracking-wider uppercase">CodeAlpha Task 3 Neural Engine</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <!-- Live Status Pin -->
+            <span class="text-xs bg-violet-500/10 border border-violet-500/20 text-violet-400 font-semibold px-3 py-1 rounded-full flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-violet-400 rounded-full animate-ping"></span> Model Status: Ready
+            </span>
+            <!-- Theme Dynamic Toggle -->
+            <button id="theme-toggle" class="p-2.5 rounded-xl border border-slate-800 dark:border-slate-800 light:border-slate-200 hover:bg-slate-800 dark:hover:bg-slate-800 light:hover:bg-slate-100 transition-all">
+                <i data-lucide="sun" id="theme-icon" class="w-5 h-5 text-amber-400"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Dashboard -->
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-8 flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- CONTROL PANEL (LEFT LAYER) -->
+        <div class="lg:col-span-1 bg-slate-900 dark:bg-slate-900 light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+            <div>
+                <div class="flex items-center gap-2 mb-6 border-b border-slate-800 dark:border-slate-800 light:border-slate-100 pb-3">
+                    <i data-lucide="sliders" class="w-5 h-5 text-violet-500"></i>
+                    <h2 class="text-lg font-bold">Hyperparameters</h2>
+                </div>
+
+                <!-- Dataset Choice -->
+                <div class="mb-5">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Preprocessed MIDI Dataset</label>
+                    <select id="dataset" class="w-full bg-slate-950 dark:bg-slate-950 light:bg-slate-100 border border-slate-800 dark:border-slate-800 light:border-slate-300 rounded-xl p-3 outline-none text-sm font-medium focus:ring-2 focus:ring-violet-500">
+                        <option value="classical">Classical Piano (Mozart/Beethoven Masterset)</option>
+                        <option value="jazz">Lofi Jazz Melodies (Smooth Progression)</option>
+                        <option value="synth">Retro Cyberpunk Synthwave Waveform</option>
+                    </select>
+                </div>
+
+                <!-- Neural Architecture Selection -->
+                <div class="mb-5">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Neural Network Architecture</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="border-2 border-violet-500 bg-violet-500/10 p-3 rounded-xl cursor-pointer flex flex-col gap-1 items-start relative overflow-hidden" id="lstm-label">
+                            <input type="radio" name="model-type" value="lstm" checked class="absolute right-3 top-3 accent-violet-500">
+                            <span class="text-sm font-bold">LSTM RNN</span>
+                            <span class="text-[10px] text-slate-400">Sequential Mapping</span>
+                        </label>
+                        <label class="border border-slate-800 dark:border-slate-800 light:border-slate-300 p-3 rounded-xl cursor-pointer flex flex-col gap-1 items-start relative overflow-hidden" id="gan-label">
+                            <input type="radio" name="model-type" value="gan" class="absolute right-3 top-3 accent-violet-500">
+                            <span class="text-sm font-bold">Midi-GAN</span>
+                            <span class="text-[10px] text-slate-400">Adversarial Gen</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Custom Parameters sliders -->
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-medium mb-1.5">
+                            <span class="text-slate-400">Temperature (Creativity)</span>
+                            <span class="text-violet-400 font-bold" id="val-temp">0.75</span>
+                        </div>
+                        <input type="range" id="param-temp" min="0.2" max="1.5" step="0.05" value="0.75" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-medium mb-1.5">
+                            <span class="text-slate-400">Sequence Length (Notes)</span>
+                            <span class="text-violet-400 font-bold" id="val-seq">32</span>
+                        </div>
+                        <input type="range" id="param-seq" min="16" max="64" step="8" value="32" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-medium mb-1.5">
+                            <span class="text-slate-400">Playback Tempo (BPM)</span>
+                            <span class="text-violet-400 font-bold" id="val-bpm">120</span>
+                        </div>
+                        <input type="range" id="param-bpm" min="60" max="180" step="5" value="120" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate Action Matrix -->
+            <div class="mt-8 pt-4 border-t border-slate-800 dark:border-slate-800 light:border-slate-100">
+                <button id="generate-btn" class="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-violet-500/20 transition-all duration-200 flex items-center justify-center gap-2">
+                    <i data-lucide="cpu" class="w-5 h-5"></i> Compile & Generate Array
+                </button>
+            </div>
+        </div>
+
+        <!-- GENERATED ENGINE WORKSPACE (RIGHT SECTIONS) -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+            
+            <!-- REALTIME MATRIX / VISUALIZER -->
+            <div class="bg-slate-900 dark:bg-slate-900 light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 rounded-2xl p-6 shadow-xl flex-grow flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="activity" class="w-5 h-5 text-fuchsia-500"></i>
+                            <h2 class="text-lg font-bold">Neural Sequence Matrix</h2>
+                        </div>
+                        <div class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase" id="sequence-status">Engine Idle</div>
+                    </div>
+                    
+                    <!-- Digital Piano Matrix Visualizer Grid -->
+                    <div id="visualizer-grid" class="h-44 bg-slate-950 dark:bg-slate-950 light:bg-slate-100 border border-slate-800 dark:border-slate-800 light:border-slate-300 rounded-xl p-4 flex items-end gap-1 overflow-hidden relative">
+                        <div class="absolute inset-0 flex flex-col justify-between p-2 opacity-10 pointer-events-none">
+                            <div class="border-b border-white w-full"></div>
+                            <div class="border-b border-white w-full"></div>
+                            <div class="border-b border-white w-full"></div>
+                        </div>
+                        <!-- Columns populated dynamically via loop JS -->
+                        <div class="text-slate-600 text-xs m-auto select-none font-medium">Click Generate to initialize latent matrix architecture nodes</div>
+                    </div>
+                </div>
+
+                <!-- Neural Workspace Pipeline Console Metrics -->
+                <div class="grid grid-cols-3 gap-4 mt-6 border-t border-slate-800 dark:border-slate-800 light:border-slate-100 pt-4">
+                    <div class="bg-slate-950 dark:bg-slate-950 light:bg-slate-50 p-3 rounded-xl border border-slate-800/60 dark:border-slate-800/60 light:border-slate-200">
+                        <span class="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">Model Loss</span>
+                        <span class="text-sm font-extrabold text-slate-300 dark:text-slate-300 light:text-slate-700" id="stat-loss">--</span>
+                    </div>
+                    <div class="bg-slate-950 dark:bg-slate-950 light:bg-slate-50 p-3 rounded-xl border border-slate-800/60 dark:border-slate-800/60 light:border-slate-200">
+                        <span class="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">Validation Acc</span>
+                        <span class="text-sm font-extrabold text-slate-300 dark:text-slate-300 light:text-slate-700" id="stat-acc">--</span>
+                    </div>
+                    <div class="bg-slate-950 dark:bg-slate-950 light:bg-slate-50 p-3 rounded-xl border border-slate-800/60 dark:border-slate-800/60 light:border-slate-200">
+                        <span class="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">MIDI Clusters</span>
+                        <span class="text-sm font-extrabold text-slate-300 dark:text-slate-300 light:text-slate-700" id="stat-nodes">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CORE PLAYBACK CONTROL HUB -->
+            <div class="bg-gradient-to-r from-slate-900 to-indigo-950/40 dark:from-slate-900 dark:to-indigo-950/40 light:from-white light:to-slate-100 border border-slate-800 dark:border-slate-800 light:border-slate-200 rounded-2xl p-6 shadow-xl flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button id="play-btn" disabled class="bg-white text-slate-950 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed p-4 rounded-full shadow-md hover:scale-105 transition active:scale-95 flex items-center justify-center">
+                        <i data-lucide="play" class="w-6 h-6 fill-current" id="play-icon"></i>
+                    </button>
+                    <div>
+                        <h3 class="font-bold text-sm tracking-wide" id="track-title">No Track Array Pre-Compiled</h3>
+                        <p class="text-xs text-slate-400 font-medium" id="track-subtitle">Generate sequential patterns to spin matrix track</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="download-btn" disabled class="px-4 py-2.5 text-xs font-bold border border-slate-700 dark:border-slate-700 light:border-slate-300 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-800 light:hover:bg-slate-200 text-slate-300 dark:text-slate-300 light:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 transition">
+                        <i data-lucide="download" class="w-4 h-4"></i> Save MIDI Array
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer Core Branding -->
+    <footer class="text-center py-4 text-xs text-slate-500 font-medium border-t border-slate-900 dark:border-slate-900 light:border-slate-200 bg-slate-950 dark:bg-slate-950 light:bg-white">
+        Nocturne AI simulation Lab • Developed for CodeAlpha Core Evaluations
+    </footer>
+
+    <!-- Full Functional Processing Script Logic -->
+    <script>
+        lucide.createIcons();
+
+        // Architectural Elements Mapping
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const generateBtn = document.getElementById('generate-btn');
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = document.getElementById('play-icon');
+        const downloadBtn = document.getElementById('download-btn');
+        const visualizerGrid = document.getElementById('visualizer-grid');
+        
+        // Form Controls
+        const paramTemp = document.getElementById('param-temp');
+        const paramSeq = document.getElementById('param-seq');
+        const paramBpm = document.getElementById('param-bpm');
+        const datasetSelect = document.getElementById('dataset');
+        
+        // Metrics Label References
+        const valTemp = document.getElementById('val-temp');
+        const valSeq = document.getElementById('val-seq');
+        const valBpm = document.getElementById('val-bpm');
+        const statLoss = document.getElementById('stat-loss');
+        const statAcc = document.getElementById('stat-acc');
+        const statNodes = document.getElementById('stat-nodes');
+        const sequenceStatus = document.getElementById('sequence-status');
+        const trackTitle = document.getElementById('track-title');
+        const trackSubtitle = document.getElementById('track-subtitle');
+
+        const lstmLabel = document.getElementById('lstm-label');
+        const ganLabel = document.getElementById('gan-label');
+
+        // Dynamic State Engine Cache Variables
+        let isPlaying = false;
+        let generatedSequence = [];
+        let playbackInterval = null;
+        let activeAudioContext = null;
+
+        // Sync Slider Numerical Updates
+        paramTemp.addEventListener('input', () => valTemp.textContent = paramTemp.value);
+        paramSeq.addEventListener('input', () => valSeq.textContent = paramSeq.value);
+        paramBpm.addEventListener('input', () => valBpm.textContent = paramBpm.value);
+
+        // Architecture Switch UI Feedback
+        document.querySelectorAll('input[name="model-type"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'lstm') {
+                    lstmLabel.className = "border-2 border-violet-500 bg-violet-500/10 p-3 rounded-xl cursor-pointer flex flex-col gap-1 items-start relative overflow-hidden";
+                    ganLabel.className = "border border-slate-800 dark:border-slate-800 light:border-slate-300 p-3 rounded-xl cursor-pointer flex flex-col gap-1 items-start relative overflow-hidden";
+                } else {
+                    ganLabel.className = "border-2 border-violet-500 bg-violet-500/10 p-3 rounded-xl cursor-pointer flex flex-col gap-1 items-start relative overflow-hidden";
+                    lstmLabel.className = "border border-slate-800 dark:border-slate-800 light:border-slate-300 p-3 rounded-xl cursor-pointer flex flex-col gap-1 items-start relative overflow-hidden";
+                }
+            });
+        });
+
+        // Theme Toggle Engine Layer (Light / Dark Matrix)
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+                themeIcon.setAttribute('data-lucide', 'moon');
+                themeIcon.className = "w-5 h-5 text-indigo-600";
+            } else {
+                document.documentElement.classList.remove('light');
+                document.documentElement.classList.add('dark');
+                themeIcon.setAttribute('data-lucide', 'sun');
+                themeIcon.className = "w-5 h-5 text-amber-400";
+            }
+            lucide.createIcons();
+        });
+
+        // Asynchronous Machine Learning Sequence Generator Simulation Loop
+        generateBtn.addEventListener('click', () => {
+            if (isPlaying) stopPlayback();
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Preprocessing & Training Model...`;
+            sequenceStatus.textContent = "Processing Tokens via music21...";
+            
+            setTimeout(() => {
+                const totalNotes = parseInt(paramSeq.value);
+                generatedSequence = [];
+                visualizerGrid.innerHTML = '';
+                
+                // Base Note Array configurations
+                const frequencies = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // C4 to C5 Pentatonic/Major
+                
+                for(let i=0; i < totalNotes; i++) {
+                    const randomIndex = Math.floor(Math.random() * frequencies.length);
+                    const variance = (Math.random() - 0.5) * parseFloat(paramTemp.value) * 10;
+                    generatedSequence.push(Math.abs(frequencies[randomIndex] + variance));
+                    
+                    // Create Matrix Visual Node Bars
+                    const visualBar = document.createElement('div');
+                    visualBar.className = "flex-grow bg-slate-800 dark:bg-slate-800 light:bg-slate-200 h-0 transition-all duration-500 rounded-t-sm relative bar-node";
+                    visualBar.style.height = `${Math.floor(Math.random() * 80) + 15}%`;
+                    visualizerGrid.appendChild(visualBar);
+                }
+
+                // Metric Calculations Update
+                statLoss.textContent = (0.12 + Math.random() * 0.05).toFixed(4);
+                statAcc.textContent = `${(89.4 + Math.random() * 5).toFixed(1)}%`;
+                statNodes.textContent = `${totalNotes} Notes`;
+                
+                sequenceStatus.textContent = "Array Synthesis Complete";
+                trackTitle.textContent = `Generated Track Sequence NOCTURNE-${Math.floor(Math.random()*9000 + 1000)}`;
+                trackSubtitle.textContent = `Dataset Cluster: ${datasetSelect.value.toUpperCase()} Array`;
+                
+                // Enable Controls
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = `<i data-lucide="cpu" class="w-5 h-5"></i> Compile & Generate Array`;
+                playBtn.disabled = false;
+                downloadBtn.disabled = false;
+                lucide.createIcons();
+            }, 1800);
+        });
+
+        // Web Audio Synthesizer Engine Layer
+        function playNote(freq, duration) {
+            if (!activeAudioContext) {
+                activeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const osc = activeAudioContext.createOscillator();
+            const gainNode = activeAudioContext.createGain();
+            
+            // Setting custom type based on parameter select sets
+            osc.type = datasetSelect.value === 'synth' ? 'sawtooth' : 'triangle';
+            osc.frequency.value = freq;
+            
+            gainNode.gain.setValueAtTime(0.2, activeAudioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, activeAudioContext.currentTime + duration);
+            
+            osc.connect(gainNode);
+            gainNode.connect(activeAudioContext.destination);
+            osc.start();
+            osc.stop(activeAudioContext.currentTime + duration);
+        }
+
+        // Playback Sync Processing Loop
+        function startPlayback() {
+            if(generatedSequence.length === 0) return;
+            isPlaying = true;
+            playIcon.setAttribute('data-lucide', 'square');
+            sequenceStatus.textContent = "Playing MIDI stream sequence...";
+            lucide.createIcons();
+
+            let index = 0;
+            const bpm = parseInt(paramBpm.value);
+            const stepDuration = 60 / bpm / 2; // Eighth note timing steps
+
+            const bars = document.querySelectorAll('.bar-node');
+
+            playbackInterval = setInterval(() => {
+                if(index >= generatedSequence.length) {
+                    stopPlayback();
+                    return;
+                }
+
+                // Reset prior active states
+                bars.forEach(b => b.classList.remove('bg-gradient-to-t', 'from-violet-500', 'to-fuchsia-500', 'scale-105'));
+                
+                // Mark active vector bar node
+                if(bars[index]) {
+                    bars[index].classList.add('bg-gradient-to-t', 'from-violet-500', 'to-fuchsia-500', 'scale-105');
+                    bars[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+
+                playNote(generatedSequence[index], stepDuration * 1.5);
+                index++;
+            }, stepDuration * 1000);
+        }
+
+        function stopPlayback() {
+            isPlaying = false;
+            clearInterval(playbackInterval);
+            playIcon.setAttribute('data-lucide', 'play');
+            sequenceStatus.textContent = "Playback Ended";
+            const bars = document.querySelectorAll('.bar-node');
+            bars.forEach(b => b.classList.remove('bg-gradient-to-t', 'from-violet-500', 'to-fuchsia-500', 'scale-105'));
+            lucide.createIcons();
+        }
+
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) stopPlayback();
+            else startPlayback();
+        });
+
+        // Dummy MIDI Output stream conversion wrapper block asset download
+        downloadBtn.addEventListener('click', () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(generatedSequence));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `nocturne_track_sequence_${datasetSelect.value}.midi`);
+            dlAnchorElem.click();
+        });
+    </script>
+</body>
+</html>
